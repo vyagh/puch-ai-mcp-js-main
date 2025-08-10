@@ -26,6 +26,23 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// Root endpoint
+app.get("/", (req, res) => {
+    res.json({ 
+        message: "Medical MCP Server is running",
+        version: "1.0.0",
+        endpoints: {
+            health: "/health",
+            mcp: "/mcp",
+            api: {
+                tools: "/api/tools",
+                medical: "/api/medical"
+            }
+        },
+        status: "operational"
+    });
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -320,7 +337,16 @@ app.post("/api/medical", async (req, res) => {
     }
 });
 
-const port = process.env.PORT || 5173;
-app.listen(port, () => {
-    console.log(`Web server listening on http://localhost:${port}`);
-});
+// Start server
+const PORT = process.env.PORT || 5173;
+
+try {
+    app.listen(PORT, () => {
+        console.log(`Web server listening on http://localhost:${PORT}`);
+        console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
+        console.log(`Health check available at http://localhost:${PORT}/health`);
+    });
+} catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+}
