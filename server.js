@@ -34,6 +34,5 @@ app.post("/api/medical", async (req, res) => {
 
 const port = process.env.PORT || 5173;
 app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.error(`Web server listening on http://localhost:${port}`);
+    console.log(`Web server listening on http://localhost:${port}`);
 });

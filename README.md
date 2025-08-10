@@ -71,7 +71,7 @@ This server is designed to work with [Puch AI's MCP integration](https://puch.ai
 4. Add environment variable: `OPENAI_API_KEY=your_key`
 5. Deploy!
 
-**Detailed instructions:** See [deploy-vercel.md](deploy-vercel.md)
+**Detailed instructions:** See [deploy-vercel.md](deploy-vercel.md) and [FINAL_STEPS.md](FINAL_STEPS.md)
 
 ### Alternative Platforms
 

@@ -7,10 +7,7 @@ const OpenAIBaseUrl =
     process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
 const OpenAIApiKey = process.env.OPENAI_API_KEY || "";
 if (!OpenAIApiKey) {
-    // eslint-disable-next-line no-console
-    console.warn(
-        "Warning: OPENAI_API_KEY is not set. The tool will fail on first call."
-    );
+    console.warn("Warning: OPENAI_API_KEY is not set. The tool will fail on first call.");
 }
 const ToolInputShape = {
     query: z.string().min(1, "query is required"),
@@ -289,7 +286,6 @@ async function main() {
     await server.connect(transport);
 }
 main().catch((err) => {
-    // eslint-disable-next-line no-console
     console.error(err);
     process.exit(1);
 });
