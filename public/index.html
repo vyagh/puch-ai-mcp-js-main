@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Medical MCP Chat</title>
+    <style>
+        :root {
+            --bg: #0b141a;
+            --panel: #111b21;
+            --me: #005c4b;
+            --them: #202c33;
+            --text: #e9edef;
+            --muted: #8696a0;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+
+        .container {
+            display: grid;
+            grid-template-rows: 1fr auto;
+            height: 100vh;
+        }
+
+        .messages {
+            overflow-y: auto;
+            padding: 24px;
+            background: linear-gradient(#0a1014, #0b141a);
+        }
+
+        .msg {
+            max-width: 680px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin: 4px 0;
+            white-space: pre-wrap;
+            line-height: 1.35;
+            position: relative;
+        }
+
+        .me {
+            background: var(--me);
+            margin-left: auto;
+        }
+
+        .them {
+            background: var(--them);
+            margin-right: auto;
+        }
+
+        .composer {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            background: var(--panel);
+            border-top: 1px solid #1f2c33;
+        }
+
+        input,
+        textarea {
+            background: #2a3942;
+            border: none;
+            color: var(--text);
+            border-radius: 8px;
+            padding: 10px 12px;
+            width: 100%;
+            resize: none;
+        }
+
+        button {
+            background: #00a884;
+            color: #fff;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 12px;
+            margin: 6px 0 0;
+        }
+
+        .block {
+            display: block;
+            margin-top: 6px;
+        }
+
+        .key {
+            color: #a8b3ba;
+        }
+
+        .val {
+            color: #e9edef;
+        }
+
+        .pill {
+            display: inline-block;
+            background: #2a3942;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin: 2px 4px 0 0;
+            font-size: 12px;
+        }
+
+        .yt {
+            aspect-ratio: 16/9;
+            width: 100%;
+            border: 0;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .typing {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #a8b3ba;
+            opacity: 0.7;
+            animation: blink 1.4s infinite both;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: .2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: .4s;
+        }
+
+        @keyframes blink {
+
+            0%,
+            80%,
+            100% {
+                opacity: 0.2
+            }
+
+            40% {
+                opacity: 1
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div id="messages" class="messages"></div>
+        <div class="composer">
+            <textarea id="input" rows="1" placeholder="Type your symptom, e.g. I have a fever..."></textarea>
+            <button id="send">Send</button>
+        </div>
+    </div>
+    <script>
+        const messages = document.getElementById('messages');
+        const input = document.getElementById('input');
+        const sendBtn = document.getElementById('send');
+
+        function addMsg(text, who = 'me') {
+            const el = document.createElement('div');
+            el.className = `msg ${who === 'me' ? 'me' : 'them'}`;
+            el.textContent = text;
+            messages.appendChild(el);
+            messages.scrollTop = messages.scrollHeight;
+            return el;
+        }
+
+        function addStructured(payload, targetEl = null) {
+            const el = targetEl || document.createElement('div');
+            if (!targetEl) el.className = 'msg them';
+            let html = '';
+            if (payload.intent) {
+                html += `<div class="block"><span class="key">Intent:</span> <span class="val">${escapeHtml(payload.intent)}</span></div>`;
+            }
+            if (Array.isArray(payload.otc_medicines) && payload.otc_medicines.length) {
+                html += `<div class="block"><span class="key">OTC Medicines:</span></div>`;
+                for (const m of payload.otc_medicines) {
+                    html += `<div class="pill">${escapeHtml(m.name)}</div>`;
+                    if (m.dosage_guidance) html += `<div class="meta">${escapeHtml(m.dosage_guidance)}</div>`;
+                    if (m.cautions) html += `<div class="meta">Cautions: ${escapeHtml(m.cautions)}</div>`;
+                }
+            }
+            if (Array.isArray(payload.home_remedies) && payload.home_remedies.length) {
+                html += `<div class="block"><span class="key">Home Remedies:</span></div>`;
+                for (const h of payload.home_remedies) {
+                    html += `<div class="block">• <b>${escapeHtml(h.title)}</b> — ${escapeHtml(h.rationale)}</div>`;
+                }
+            }
+            if (Array.isArray(payload.videos) && payload.videos.length) {
+                html += `<div class="block"><span class="key">Videos:</span></div>`;
+                for (const v of payload.videos) {
+                    if (v?.url) {
+                        html += `<div class=\"block\"><a href=\"${escapeAttr(v.url)}\" target=\"_blank\">${escapeHtml(v.url)}</a></div>`;
+                        continue;
+                    }
+                    if (v?.embed_url) {
+                        html += `<div class=\"block\"><a href=\"${escapeAttr(v.embed_url)}\" target=\"_blank\">${escapeHtml(v.embed_url)}</a></div>`;
+                        continue;
+                    }
+                    if (typeof v?.iframe === 'string' || typeof v?.html === 'string') {
+                        // As a last resort, extract src from iframe/html and show as a link
+                        const temp = document.createElement('div');
+                        temp.innerHTML = v.iframe || v.html;
+                        const iframe = temp.querySelector('iframe');
+                        const src = iframe?.getAttribute('src');
+                        if (src) html += `<div class=\"block\"><a href=\"${escapeAttr(src)}\" target=\"_blank\">${escapeHtml(src)}</a></div>`;
+                    }
+                }
+            }
+            if (Array.isArray(payload.nearby_chemists) && payload.nearby_chemists.length) {
+                html += `<div class="block"><span class="key">Nearby Chemists:</span></div>`;
+                for (const c of payload.nearby_chemists) {
+                    const name = c.name ? `<b>${escapeHtml(c.name)}</b>` : 'Pharmacy';
+                    const addr = c.address ? ` — ${escapeHtml(c.address)}` : '';
+                    const link = c.map_url ? ` <a href="${escapeAttr(c.map_url)}" target="_blank">Map</a>` : '';
+                    html += `<div class="block">• ${name}${addr}${link}</div>`;
+                }
+            }
+            if (Array.isArray(payload.red_flags) && payload.red_flags.length) {
+                html += `<div class="block"><span class="key">Red Flags:</span></div>`;
+                for (const r of payload.red_flags) {
+                    html += `<div class="block">• ${escapeHtml(r)}</div>`;
+                }
+            }
+            if (Array.isArray(payload.disclaimers) && payload.disclaimers.length) {
+                html += `<div class="block"><span class="key">Disclaimers:</span></div>`;
+                for (const d of payload.disclaimers) {
+                    html += `<div class="meta">${escapeHtml(d)}</div>`;
+                }
+            }
+            el.innerHTML = html || '<div class="block">No content</div>';
+            if (!targetEl) messages.appendChild(el);
+            messages.scrollTop = messages.scrollHeight;
+            return el;
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"]+/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[s]));
+        }
+        function escapeAttr(str) { return escapeHtml(str); }
+
+        function renderIframeSafe(html) {
+            try {
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const iframe = temp.querySelector('iframe');
+                if (!iframe) return null;
+                const src = iframe.getAttribute('src') || '';
+                const u = new URL(src, location.origin);
+                const host = u.hostname;
+                if (!/^(www\.)?(youtube-nocookie\.com|youtube\.com)$/.test(host)) return null;
+                const clean = document.createElement('iframe');
+                clean.className = 'yt';
+                clean.width = iframe.getAttribute('width') || '100%';
+                clean.height = iframe.getAttribute('height') || '315';
+                clean.src = src;
+                clean.title = iframe.getAttribute('title') || 'YouTube video';
+                clean.setAttribute('frameborder', '0');
+                clean.setAttribute('allow', iframe.getAttribute('allow') || 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                clean.setAttribute('referrerpolicy', iframe.getAttribute('referrerpolicy') || 'strict-origin-when-cross-origin');
+                clean.setAttribute('allowfullscreen', '');
+                return clean;
+            } catch { return null; }
+        }
+
+        function addLoading() {
+            const el = document.createElement('div');
+            el.className = 'msg them';
+            el.innerHTML = '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+            messages.appendChild(el);
+            messages.scrollTop = messages.scrollHeight;
+            return el;
+        }
+
+        async function send() {
+            const text = input.value.trim();
+            if (!text) return;
+            addMsg(text, 'me');
+            input.value = '';
+            const loader = addLoading();
+            try {
+                const resp = await fetch('/api/medical', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ query: text })
+                });
+                const raw = await resp.text();
+                if (!resp.ok) {
+                    loader.textContent = 'Error: ' + raw.slice(0, 500);
+                    return;
+                }
+                let data;
+                try { data = JSON.parse(raw); } catch { loader.textContent = 'Server returned non-JSON: ' + raw.slice(0, 500); return; }
+                let payload = null;
+                if (data && Array.isArray(data.content)) {
+                    const textPart = data.content.find(c => c && c.type === 'text' && typeof c.text === 'string');
+                    if (textPart) {
+                        try { payload = JSON.parse(textPart.text); }
+                        catch { loader.textContent = textPart.text; return; }
+                    }
+                }
+                if (!payload) payload = data;
+                addStructured(payload, loader);
+            } catch (e) {
+                const el = document.createElement('div');
+                el.className = 'msg them';
+                el.textContent = 'Error: ' + (e?.message || e);
+                messages.appendChild(el);
+                messages.removeChild(loader);
+            }
+        }
+
+        sendBtn.addEventListener('click', send);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+        });
+    </script>
+</body>
+
+</html>
