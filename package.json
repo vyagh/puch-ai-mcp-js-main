@@ -1,25 +1,21 @@
 {
-    "name": "mcp-js",
+    "name": "medical-mcp-server",
     "version": "1.0.0",
-    "description": "Medical MCP server that expands symptom prompts via LLM and enriches with nearby chemists and remedies",
-    "main": "index.js",
+    "description": "Medical MCP server that provides intelligent medical guidance",
+    "main": "server.js",
     "type": "module",
     "scripts": {
-        "start": "node index.js",
-        "inspect": "npx @modelcontextprotocol/inspector -- node index.js"
+        "start": "node server.js",
+        "dev": "node server.js"
     },
-    "keywords": [],
+    "keywords": ["mcp", "medical", "ai", "healthcare"],
     "author": "",
     "license": "ISC",
     "engines": {
         "node": ">=18.0.0"
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.17.2",
         "express": "^4.19.2",
-        "cross-fetch": "^4.1.0",
-        "dotenv": "^17.2.1",
-        "uuid": "^9.0.1",
         "zod": "^3.25.76"
     }
 }
