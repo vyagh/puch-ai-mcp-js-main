@@ -62,9 +62,20 @@ Type a short symptom message; the page calls the MCP gateway which invokes the `
 
 This server is designed to work with [Puch AI's MCP integration](https://puch.ai/mcp). To deploy for the hackathon:
 
-### 1. Deploy to Production
+### 1. Deploy to Vercel (Recommended)
 
-Deploy your server to a hosting platform (Vercel, Railway, Render, etc.) that supports:
+**Quick Deploy:**
+1. Fork this repository to your GitHub
+2. Go to [Vercel](https://vercel.com/new)
+3. Import your GitHub repository
+4. Add environment variable: `OPENAI_API_KEY=your_key`
+5. Deploy!
+
+**Detailed instructions:** See [deploy-vercel.md](deploy-vercel.md)
+
+### Alternative Platforms
+
+You can also deploy to Railway, Render, or any platform that supports:
 - HTTPS (required by Puch AI)
 - Node.js 18+
 - Environment variables
