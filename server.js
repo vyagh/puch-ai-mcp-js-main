@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { z } from "zod";
 import fetch from "cross-fetch";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,14 +17,16 @@ app.get("/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// OpenAI configuration
-const OpenAIModel = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const OpenAIBaseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-const OpenAIApiKey = process.env.OPENAI_API_KEY || "";
+// Gemini configuration
+const GeminiApiKey = process.env.GEMINI_API_KEY || "";
+const GeminiModel = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
-if (!OpenAIApiKey) {
-    console.warn("Warning: OPENAI_API_KEY is not set. Medical guidance will be limited.");
+if (!GeminiApiKey) {
+    console.warn("Warning: GEMINI_API_KEY is not set. Medical guidance will be limited.");
 }
+
+// Initialize Gemini
+const genAI = GeminiApiKey ? new GoogleGenerativeAI(GeminiApiKey) : null;
 
 // Medical guidance functions
 function buildPrompt({ query }) {
@@ -53,39 +56,23 @@ Return a single JSON object with exactly these keys:
 Ensure valid JSON.`;
 }
 
-async function callOpenAI(prompt) {
-    if (!OpenAIApiKey) {
-        throw new Error("OpenAI API key not configured");
+async function callGemini(prompt) {
+    if (!genAI) {
+        throw new Error("Gemini API key not configured");
     }
     
-    const resp = await fetch(`${OpenAIBaseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${OpenAIApiKey}`,
-        },
-        body: JSON.stringify({
-            model: OpenAIModel,
-            messages: [
-                {
-                    role: "system",
-                    content: "You are a careful medical assistant. Always return valid JSON only.",
-                },
-                { role: "user", content: prompt },
-            ],
-            temperature: 0.2,
-            response_format: { type: "json_object" },
-        }),
-    });
-    
-    if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(`OpenAI API error: ${resp.status} ${resp.statusText} - ${text}`);
+    try {
+        const model = genAI.getGenerativeModel({ model: GeminiModel });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        // Parse the JSON response
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Gemini API error:", error);
+        throw new Error(`Gemini API error: ${error.message}`);
     }
-    
-    const data = await resp.json();
-    const text = data.choices?.[0]?.message?.content ?? "";
-    return JSON.parse(text);
 }
 
 // Nearby chemists function
@@ -194,9 +181,9 @@ app.post("/mcp", async (req, res) => {
             } else if (name === "medical_assist") {
                 const { query, userLocation } = args;
                 
-                // Get medical guidance from OpenAI
+                // Get medical guidance from Gemini
                 const prompt = buildPrompt({ query });
-                const modelObj = await callOpenAI(prompt);
+                const modelObj = await callGemini(prompt);
                 
                 // Add nearby chemists if location provided
                 if (userLocation) {
@@ -253,9 +240,9 @@ app.post("/api/medical", async (req, res) => {
             return res.status(400).json({ error: "Query is required" });
         }
         
-        // Get medical guidance from OpenAI
+        // Get medical guidance from Gemini
         const prompt = buildPrompt({ query });
-        const modelObj = await callOpenAI(prompt);
+        const modelObj = await callGemini(prompt);
         
         // Add nearby chemists if location provided
         if (userLocation) {

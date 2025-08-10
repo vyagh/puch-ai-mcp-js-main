@@ -1,106 +1,101 @@
-# Medical Assistant MCP Server
+# Medical MCP Server
 
-A Model Context Protocol (MCP) server that provides intelligent medical guidance by expanding short symptom descriptions into comprehensive, structured advice.
+A Model Context Protocol (MCP) server that provides intelligent medical guidance using Google's Gemini AI. This server offers comprehensive medical assistance including symptom analysis, OTC medicine suggestions, home remedies, and nearby pharmacy locations.
 
 ## Features
 
-- **Symptom Analysis**: Takes brief symptom inputs and expands them into detailed medical guidance
-- **OTC Recommendations**: Suggests over-the-counter medicines with dosage and safety information
-- **Nearby Chemists**: Finds nearby pharmacies using OpenStreetMap data (when location provided)
-- **Home Remedies**: Provides natural treatment options with explanations
-- **Educational Videos**: Curates relevant YouTube videos for home care guidance
-- **Safety Alerts**: Highlights red flags that require immediate medical attention
-- **Puch AI Compatible**: Includes required `validate` tool for authentication
-
-## Requirements
-
-- Node.js 18+
-- OpenAI API key
+- **🤖 AI-Powered Medical Guidance** - Uses Google Gemini for intelligent medical responses
+- **💊 OTC Medicine Suggestions** - Safe over-the-counter medication recommendations
+- **🏠 Home Remedies** - Natural treatment options with rationales
+- **📍 Nearby Chemists** - Location-based pharmacy finder using OpenStreetMap
+- **📹 Educational Videos** - Curated YouTube links for medical education
+- **🚨 Red Flag Detection** - Identifies symptoms requiring immediate attention
+- **🔐 MCP Protocol** - Full Model Context Protocol compliance for AI assistants
+- **🌐 Web Interface** - Beautiful chat interface for direct interaction
 
 ## Setup
 
-1. Install dependencies:
-```bash
-npm install
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/vyagh/puch-ai-mcp-js-main.git
+   cd puch-ai-mcp-js-main
+   ```
 
-2. Configure environment:
-```bash
-# Create .env file with your OpenAI API key
-OPENAI_API_KEY=your_openai_api_key
-```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables:**
+   ```bash
+   cp env.example .env
+   # Edit .env and add your Gemini API key
+   ```
+
+4. **Get a Gemini API key:**
+   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Create a new API key
+   - Add it to your `.env` file as `GEMINI_API_KEY`
 
 ## Usage
 
-### Local Development
+### Start the server:
 ```bash
-# Start MCP server
 npm start
-
-# Start web interface
-node server.js
-# Visit http://localhost:5173
 ```
 
-### Production Deployment
-Deploy to any platform supporting Node.js (Vercel, Railway, Render, etc.) with HTTPS.
+The server will be available at `http://localhost:5173`
 
-## Available Tools
+### Web Interface
+Visit `http://localhost:5173` to use the chat interface for medical queries.
 
-### `validate`
-Authenticates users for MCP clients. Returns phone number in format `{country_code}{number}`.
+### API Endpoints
 
-**Input**: `{ "bearer_token": "string" }`
-**Output**: `{ "phone_number": "919876543210" }`
+- `GET /health` - Health check
+- `GET /api/tools` - List available MCP tools
+- `POST /api/medical` - Medical assistance endpoint
+- `POST /mcp` - MCP protocol endpoint
 
-### `medical_assist`
-Provides comprehensive medical guidance based on symptoms.
+### MCP Tools
 
-**Input**: 
-```json
-{
-  "query": "I have a fever",
-  "userLocation": { "lat": 28.6139, "lon": 77.209 }
-}
+1. **validate** - Validates bearer tokens for Puch AI authentication
+2. **medical_assist** - Provides comprehensive medical guidance
+
+## Testing
+
+Test the MCP protocol:
+```bash
+# List available tools
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+  http://localhost:5173/mcp
+
+# Test medical assistance
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"medical_assist","arguments":{"query":"I have a fever"}}}' \
+  http://localhost:5173/mcp
 ```
 
-**Output**: Structured JSON with:
-- Intent and explanation
-- OTC medicine suggestions
-- Nearby chemists (if location provided)
-- Home remedies
-- Educational videos
-- Red flags and disclaimers
+## Deployment
 
-### `echo`
-Simple echo tool for testing connectivity.
+This server is designed to work with platforms that support long-running Node.js applications:
 
-**Input**: `{ "text": "Hello" }`
-**Output**: `{ "text": "Hello" }`
+- **Railway** (Recommended)
+- **Render**
+- **Heroku**
 
-## MCP Protocol Support
+### Railway Deployment
+1. Connect your GitHub repository to Railway
+2. Set environment variables in Railway dashboard
+3. Deploy automatically
 
-This server implements the Model Context Protocol with:
-- Core protocol messages
-- Tool definitions and calls
-- Bearer token authentication
-- Error handling
-- HTTPS requirement compliance
+## Technical Details
 
-## Environment Variables
-
-- `OPENAI_API_KEY` (required): API key for OpenAI-compatible endpoint
-- `OPENAI_MODEL` (optional): defaults to `gpt-4o-mini`
-- `OPENAI_BASE_URL` (optional): defaults to `https://api.openai.com/v1`
-
-## Security & Safety
-
-- HTTPS required for production deployment
-- Input validation with Zod schemas
-- Safe output coercion
-- Medical disclaimers included
-- Red flag warnings for serious conditions
-- **Not a substitute for professional medical care**
+- **Framework:** Express.js
+- **AI Model:** Google Gemini 1.5 Flash
+- **Location Services:** OpenStreetMap Overpass API
+- **Protocol:** Model Context Protocol (MCP)
+- **Language:** JavaScript (ES Modules)
 
 ## License
 
