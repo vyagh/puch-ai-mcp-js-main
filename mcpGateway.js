@@ -65,6 +65,11 @@ class McpGateway {
         await this.ensureStarted();
         return this.request("tools/call", { name, arguments: args });
     }
+
+    async handleMcpRequest(request) {
+        await this.ensureStarted();
+        return this.request(request.method, request.params);
+    }
 }
 
 export const gateway = new McpGateway();

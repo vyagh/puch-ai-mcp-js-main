@@ -10,6 +10,16 @@ const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// MCP endpoint for Puch AI connections
+app.post("/mcp", async (req, res) => {
+    try {
+        const result = await gateway.handleMcpRequest(req.body);
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: String(e?.message || e) });
+    }
+});
+
 app.get("/api/tools", async (req, res) => {
     try {
         const tools = await gateway.listTools();
