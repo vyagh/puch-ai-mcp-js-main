@@ -16,6 +16,12 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     
+    // Set timeout for MCP requests
+    if (req.path === '/mcp') {
+        req.setTimeout(30000); // 30 seconds
+        res.setTimeout(30000);
+    }
+    
     if (req.method === 'OPTIONS') {
         res.sendStatus(200);
     } else {
