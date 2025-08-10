@@ -10,12 +10,18 @@ const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // MCP endpoint for Puch AI connections
 app.post("/mcp", async (req, res) => {
     try {
         const result = await gateway.handleMcpRequest(req.body);
         res.json(result);
     } catch (e) {
+        console.error("MCP Error:", e);
         res.status(500).json({ error: String(e?.message || e) });
     }
 });
@@ -25,6 +31,7 @@ app.get("/api/tools", async (req, res) => {
         const tools = await gateway.listTools();
         res.json(tools);
     } catch (e) {
+        console.error("API Error:", e);
         res.status(500).json({ error: String(e?.message || e) });
     }
 });
@@ -38,6 +45,7 @@ app.post("/api/medical", async (req, res) => {
         });
         res.json(result);
     } catch (e) {
+        console.error("Medical API Error:", e);
         res.status(500).json({ error: String(e?.message || e) });
     }
 });
