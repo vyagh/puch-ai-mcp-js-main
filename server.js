@@ -229,6 +229,29 @@ app.post("/mcp", async (req, res) => {
                 id,
                 result: { tools }
             });
+        } else if (method === "initialize") {
+            // Handle MCP initialization
+            res.json({
+                jsonrpc: "2.0",
+                id,
+                result: {
+                    protocolVersion: "2024-11-05",
+                    capabilities: {
+                        tools: {}
+                    },
+                    serverInfo: {
+                        name: "Medical MCP Server",
+                        version: "1.0.0"
+                    }
+                }
+            });
+        } else if (method === "notifications/initialized") {
+            // Handle initialization notification
+            res.json({
+                jsonrpc: "2.0",
+                id,
+                result: null
+            });
         } else if (method === "tools/call") {
             const { name, arguments: args } = params;
             
