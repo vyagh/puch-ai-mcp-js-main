@@ -30,30 +30,49 @@ const genAI = GeminiApiKey ? new GoogleGenerativeAI(GeminiApiKey) : null;
 
 // Medical guidance functions
 function buildPrompt({ query }) {
-    return `You are a cautious, helpful medical assistant. Expand on the user's message and return ALL of the following sections as JSON.
+    return `You are a cautious, helpful medical assistant. Analyze the user's symptoms and return a JSON response with the following structure.
 
-Input: "${query}"
+User Input: "${query}"
 
-Requirements:
-1) Clarify the user intent from the symptom(s).
-2) Suggest over-the-counter medicine options (if appropriate), with generic names and typical dosage guidance. Include cautions and when NOT to take.
-3) The server will supply nearby chemists separately; set "nearby_chemists" to an empty array.
-4) Suggest 3-5 home remedies with short rationales.
-5) Provide 3-5 YouTube video LINKS relevant to home remedies or guidance; return as an array of objects with a single key "url" (full https YouTube watch URL, no embeds, no iframes, no placeholders).
-6) Add red flags: list symptoms that require immediate medical attention.
-7) Disclaimers: not a substitute for professional medical advice; consult a healthcare professional.
+Instructions:
+1. Analyze the symptoms and provide clear intent
+2. Suggest appropriate over-the-counter medicines with dosage and cautions
+3. Recommend 3-5 home remedies with explanations
+4. Provide 3-5 relevant YouTube video URLs for educational content
+5. List red flags that require immediate medical attention
+6. Include appropriate medical disclaimers
 
-Return a single JSON object with exactly these keys:
+IMPORTANT: Return ONLY valid JSON. Do not include any markdown formatting, backticks, or explanatory text outside the JSON.
+
+Expected JSON structure:
 {
-  "intent": string,
-  "otc_medicines": [{ "name": string, "dosage_guidance": string, "cautions": string }],
+  "intent": "Clear description of the medical concern",
+  "otc_medicines": [
+    {
+      "name": "Medicine name",
+      "dosage_guidance": "Typical dosage information",
+      "cautions": "Safety warnings and when not to take"
+    }
+  ],
   "nearby_chemists": [],
-  "home_remedies": [{ "title": string, "rationale": string }],
-  "videos": [{ "url": string }],
-  "red_flags": [string],
-  "disclaimers": [string]
-}
-Ensure valid JSON.`;
+  "home_remedies": [
+    {
+      "title": "Remedy name",
+      "rationale": "Why this helps"
+    }
+  ],
+  "videos": [
+    {
+      "url": "https://www.youtube.com/watch?v=example"
+    }
+  ],
+  "red_flags": [
+    "Symptom that requires immediate medical attention"
+  ],
+  "disclaimers": [
+    "This is not medical advice. Consult a healthcare professional."
+  ]
+}`;
 }
 
 async function callGemini(prompt) {
@@ -67,8 +86,16 @@ async function callGemini(prompt) {
         const response = await result.response;
         const text = response.text();
         
+        // Clean the response - remove markdown formatting if present
+        let cleanText = text.trim();
+        if (cleanText.startsWith('```json')) {
+            cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanText.startsWith('```')) {
+            cleanText = cleanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
         // Parse the JSON response
-        return JSON.parse(text);
+        return JSON.parse(cleanText);
     } catch (error) {
         console.error("Gemini API error:", error);
         throw new Error(`Gemini API error: ${error.message}`);
